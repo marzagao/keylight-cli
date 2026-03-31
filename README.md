@@ -9,8 +9,8 @@ This is a cross platform lightweight CLI tool to simply and easily control your 
 - [X] ~~Support for `on` / `off` toggle arguements.~~ **Added in v0.2.0**
 - [X] ~~Add help menu with `-h` flag.~~ **Added in v0.2.0**
 - [X] ~~Add status to query for on/off~~ **Added in v0.2.2**
-- [ ] Support for brightness and temperature via preset arguments, I.E, `low`, `medium`, and `high` or `warm`, `medium`, and `cool`.
-- [ ] Support for brightness by percentage.
+- [X] ~~Support for brightness and temperature via preset arguments, I.E, `low`, `medium`, and `high` or `warm`, `medium`, and `cool`.~~ **Added in v0.3.0**
+- [X] ~~Support for brightness by percentage.~~ **Added in v0.3.0**
 - [X] ~~Autodiscovery support.~~ **Added in v0.3.0**
 - [X] ~~Testing with more than 1 Elgato Keylight.~~ **Tested in v0.3.0**
 
@@ -69,7 +69,7 @@ ARGS:
 
 OPTIONS:
     -b, --brightness <brightness>
-            Brightness value for light [env: brightness=] [default: 20]
+            Brightness: percentage (0-100) or preset (low, medium, high) [env: brightness=] [default: 20]
 
     -d, --discover
             Auto-discover Elgato Keylights on the local network via mDNS
@@ -84,7 +84,7 @@ OPTIONS:
             Number of Elgato Keylights in use [env: number_of_lights=] [default: 1]
 
     -t, --temperature <temperature>
-            Temperature value for light [env: temperature=] [default: 213]
+            Temperature: value (143-344) or preset (warm, medium, cool) [env: temperature=] [default: 213]
 
     -v, --verbose
             Log Level
