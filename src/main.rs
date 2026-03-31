@@ -44,9 +44,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let discover = matches.is_present("discover");
     let elgato_ip = matches.value_of("elgato_ip");
 
-    let targets: Vec<(String, u16)> = if discover {
+    let targets: Vec<(String, u16, Option<String>)> = if discover {
         println!("Discovering Elgato Keylights on the network...");
-        let lights = discover_lights(Duration::from_secs(5))?;
+        let timeout_secs: u64 = matches
+            .value_of("timeout")
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(5);
+        let lights = discover_lights(Duration::from_secs(timeout_secs))?;
         if lights.is_empty() {
             eprintln!("Error: No Elgato Keylights found on the network.");
             std::process::exit(1);
@@ -54,15 +58,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for light in &lights {
             println!("  Found: {} ({}:{})", light.name, light.ip, light.port);
         }
-        lights.into_iter().map(|l| (l.ip, l.port)).collect()
+        lights
+            .into_iter()
+            .map(|l| (l.ip, l.port, Some(l.name)))
+            .collect()
     } else if let Some(ip) = elgato_ip {
-        vec![(ip.to_string(), 9123)]
+        vec![(ip.to_string(), 9123, None)]
     } else {
         eprintln!("Error: Either --discover or --elgato-ip must be specified.");
         std::process::exit(1);
     };
-
-    let numberoflights = matches.value_of("number_of_lights").unwrap();
 
     let switch = match matches.value_of("switch").unwrap() {
         "off" => 0,
@@ -109,7 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let body = json!({
-        "numberOfLights":numberoflights,
+        "numberOfLights":1,
         "lights":[
             {
                 "on":switch,
@@ -120,43 +125,69 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let client = Client::new();
+    let mut errors = Vec::new();
 
-    for (ip, port) in &targets {
+    for (ip, port, name) in &targets {
         let url = format!("http://{}:{}/elgato/lights", ip, port);
         log::info!("Sending request to: {}", url);
 
-        if switch == 2 {
-            // GET to read current settings without modifying them
-            let response = client.get(&url).send().await?;
-            log::info!("Response status: {}", response.status());
+        let label = match name {
+            Some(n) => format!("{} ({})", n, ip),
+            None => ip.to_string(),
+        };
 
-            let response_body = response.text().await?;
-            log::info!("Response text: {}", response_body);
+        let result: Result<(), Box<dyn std::error::Error>> = async {
+            if switch == 2 {
+                // GET to read current settings without modifying them
+                let response = client.get(&url).send().await?;
+                log::info!("Response status: {}", response.status());
 
-            let v: Value = serde_json::from_str(&response_body)?;
-            let light = &v["lights"][0];
+                let response_body = response.text().await?;
+                log::info!("Response text: {}", response_body);
 
-            let power = if light["on"] == 1 { "on" } else { "off" };
-            let brightness = &light["brightness"];
-            let temperature = &light["temperature"];
+                let v: Value = serde_json::from_str(&response_body)?;
+                let light = &v["lights"][0];
 
-            println!("Elgato light at {}:", ip);
-            println!("  Power:       {}", power);
-            println!("  Brightness:  {}%", brightness);
-            println!("  Temperature: {}", temperature);
-        } else {
-            // PUT to change settings
-            let response = client.put(&url).json(&body).send().await?;
+                let power = if light["on"] == 1 { "on" } else { "off" };
+                let brightness = &light["brightness"];
+                let temperature = &light["temperature"];
 
-            let response_success = response.status();
-            log::info!("Response status: {}", response_success);
+                println!("{}:", label);
+                println!("  Power:       {}", power);
+                println!("  Brightness:  {}%", brightness);
+                let temp_val = temperature.as_f64().unwrap_or(0.0);
+                let kelvin = if temp_val > 0.0 {
+                    (1_000_000.0 / temp_val) as u32
+                } else {
+                    0
+                };
+                println!("  Temperature: {} (~{}K)", temperature, kelvin);
+            } else {
+                // PUT to change settings
+                let response = client.put(&url).json(&body).send().await?;
 
-            let response_body = response.text().await?;
-            log::info!("Response text: {}", response_body);
+                let response_success = response.status();
+                log::info!("Response status: {}", response_success);
 
-            let response_json: serde_json::Value = serde_json::from_str(&response_body)?;
-            log::info!("Response json: {:?}", response_json);
+                let response_body = response.text().await?;
+                log::info!("Response text: {}", response_body);
+
+                let response_json: serde_json::Value = serde_json::from_str(&response_body)?;
+                log::info!("Response json: {:?}", response_json);
+            }
+            Ok(())
         }
+        .await;
+
+        if let Err(e) = result {
+            eprintln!("Error communicating with light at {}:{}: {}", ip, port, e);
+            errors.push(format!("{}:{}", ip, port));
+        }
+    }
+
+    if !errors.is_empty() {
+        eprintln!("Failed to reach {} light(s): {}", errors.len(), errors.join(", "));
+        std::process::exit(1);
     }
 
     Ok(())

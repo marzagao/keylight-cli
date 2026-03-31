@@ -42,22 +42,19 @@ pub fn get_app_cli(version: &str) -> Command<'_> {
                 .takes_value(true),
         )
         .arg(
-            Arg::new("number_of_lights")
-                .long("number-of-lights")
-                .short('n')
-                .help("Number of Elgato Keylights in use")
-                .required(false)
-                .aliases(&["number_of_lights", "number-of-lights", "number of lights"])
-                .env("number_of_lights")
-                .default_value("1")
-                .takes_value(true),
-        )
-        .arg(
             Arg::new("discover")
                 .long("discover")
                 .short('d')
                 .help("Auto-discover Elgato Keylights on the local network via mDNS")
                 .takes_value(false),
+        )
+        .arg(
+            Arg::new("timeout")
+                .long("timeout")
+                .help("Discovery timeout in seconds")
+                .required(false)
+                .default_value("5")
+                .takes_value(true),
         )
         .arg(
             Arg::new("verbose")

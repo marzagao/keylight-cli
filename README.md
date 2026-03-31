@@ -80,11 +80,11 @@ OPTIONS:
     -i, --elgato-ip <elgato_ip>
             Elgato Keylight IP address [env: elgato_ip=]
 
-    -n, --number-of-lights <number_of_lights>
-            Number of Elgato Keylights in use [env: number_of_lights=] [default: 1]
-
     -t, --temperature <temperature>
             Temperature: value (143-344) or preset (warm, medium, cool) [env: temperature=] [default: 213]
+
+        --timeout <timeout>
+            Discovery timeout in seconds [default: 5]
 
     -v, --verbose
             Log Level

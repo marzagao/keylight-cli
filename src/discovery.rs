@@ -51,9 +51,15 @@ pub fn discover_lights(
                     info.get_port()
                 );
 
-                seen_names.insert(name.clone());
+                let display_name = name
+                    .strip_suffix(SERVICE_TYPE)
+                    .unwrap_or(&name)
+                    .trim_end_matches('.')
+                    .to_string();
+
+                seen_names.insert(name);
                 lights.push(DiscoveredLight {
-                    name,
+                    name: display_name,
                     ip,
                     port: info.get_port(),
                 });
