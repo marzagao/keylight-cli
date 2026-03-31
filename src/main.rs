@@ -82,47 +82,62 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Turning {} Elgato Keylight(s) on...", targets.len());
     }
 
-    let brightness_str = matches.value_of("brightness").unwrap();
-    let brightness: u8 = match brightness_str {
-        "low" => 10,
-        "medium" => 50,
-        "high" => 100,
-        s => {
-            let s = s.strip_suffix('%').unwrap_or(s);
-            match s.parse::<u8>() {
-                Ok(v) if v <= 100 => v,
-                _ => {
-                    eprintln!("Error: Brightness must be 0-100 or a preset (low, medium, high).");
-                    std::process::exit(1);
+    let has_brightness = matches.occurrences_of("brightness") > 0;
+    let has_temperature = matches.occurrences_of("temperature") > 0;
+
+    let brightness: Option<u8> = if has_brightness {
+        let brightness_str = matches.value_of("brightness").unwrap();
+        Some(match brightness_str {
+            "low" => 10,
+            "medium" => 50,
+            "high" => 100,
+            s => {
+                let s = s.strip_suffix('%').unwrap_or(s);
+                match s.parse::<u8>() {
+                    Ok(v) if v <= 100 => v,
+                    _ => {
+                        eprintln!("Error: Brightness must be 0-100 or a preset (low, medium, high).");
+                        std::process::exit(1);
+                    }
                 }
             }
-        }
+        })
+    } else {
+        None
     };
 
-    let temperature_str = matches.value_of("temperature").unwrap();
-    let temperature: f32 = match temperature_str {
-        "warm" => 344.0,
-        "medium" => 213.0,
-        "cool" => 143.0,
-        s => match s.parse::<f32>() {
-            Ok(v) => v,
-            _ => {
-                eprintln!("Error: Temperature must be a number (143-344) or a preset (warm, medium, cool).");
-                std::process::exit(1);
-            }
-        },
+    let temperature: Option<f32> = if has_temperature {
+        let temperature_str = matches.value_of("temperature").unwrap();
+        Some(match temperature_str {
+            "warm" => 344.0,
+            "medium" => 213.0,
+            "cool" => 143.0,
+            s => match s.parse::<f32>() {
+                Ok(v) => v,
+                _ => {
+                    eprintln!("Error: Temperature must be a number (143-344) or a preset (warm, medium, cool).");
+                    std::process::exit(1);
+                }
+            },
+        })
+    } else {
+        None
     };
 
-    let body = json!({
+    let mut body = json!({
         "numberOfLights":1,
         "lights":[
             {
-                "on":switch,
-                "brightness":brightness,
-                "temperature":temperature
+                "on":switch
             }
         ]
     });
+    if let Some(b) = brightness {
+        body["lights"][0]["brightness"] = json!(b);
+    }
+    if let Some(t) = temperature {
+        body["lights"][0]["temperature"] = json!(t);
+    }
 
     let client = Client::new();
     let mut errors = Vec::new();
