@@ -95,22 +95,23 @@ OPTIONS:
 
 ## Setting up as daemon on macOS
 
+The daemon watches your camera state and automatically turns your Elgato Keylights on/off using autodiscovery.
+
 ```sh
 # clone this repo
 # from within root of this repo folder
-mkdir -p ~/bin && cp onair.sh ~/bin # makes a bin directory in your user's home folder, copies onair script to that folder
+mkdir -p ~/bin && cp onair.sh ~/bin
 
-# add your ip address and system username to the plist file
-sed -i 's/<REPLACE_IP_ADDRESS>/your-elgato-ip-address-here/g' com.keylight.daemon.plist
-sed -i 's/<REPLACE_USER>/your-username-here/g' com.keylight.daemon.plist
+# add your system username to the plist file
+sed -i '' 's/<REPLACE_USER>/your-username-here/g' com.keylight.daemon.plist
 
 # copy updated plist to launchdaemon folder
 cp com.keylight.daemon.plist /Library/LaunchDaemons/com.keylight.daemon.plist
 
-# load/start daemon/plist
+# load/start daemon
 sudo launchctl load -w /Library/LaunchDaemons/com.keylight.daemon.plist
 
 # view logs
-tail -f /tmp/keylight.stdout #standard out logs
-tail -f /tmp/keylight.stderr #standard error logs
+tail -f /tmp/keylight.stdout
+tail -f /tmp/keylight.stderr
 ```
