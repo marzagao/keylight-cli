@@ -53,7 +53,7 @@ pub fn get_app_cli(version: &str) -> Command<'_> {
                 .long("timeout")
                 .help("Discovery timeout in seconds")
                 .required(false)
-                .default_value("5")
+                .default_value("10")
                 .takes_value(true),
         )
         .arg(

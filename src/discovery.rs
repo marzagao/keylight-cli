@@ -65,7 +65,7 @@ pub fn discover_lights(
                 });
             }
             Ok(_) => {}
-            Err(_) => break,
+            Err(_) => {}
         }
     }
 
