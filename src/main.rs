@@ -72,9 +72,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if switch == 0 {
-        println!("Elgato Keylight is: off");
+        println!("Turning {} Elgato Keylight(s) off...", targets.len());
     } else if switch == 1 {
-        println!("Elgato Keylight is: on");
+        println!("Turning {} Elgato Keylight(s) on...", targets.len());
     }
 
     let brightness_str = matches.value_of("brightness").unwrap();
