@@ -19,8 +19,8 @@ This is a cross platform lightweight CLI tool to simply and easily control your 
 This app should build with minimal dependencies.  It's been tested with Rust 1.60+ on macOS and 2 Elgato Keylights.
 
 ```sh
-cargo build
-sudo mv target/debug/keylight /usr/local/bin/keylight
+cargo build --release
+sudo cp target/release/keylight /usr/local/bin/keylight
 ```
 
 ## Running The App
@@ -91,6 +91,21 @@ OPTIONS:
 
     -V, --version
             Print version information
+```
+
+## Scheduling
+
+You can use cron to automatically turn your lights on and off on a schedule. For example, to turn lights on at 8am and off at 7pm on weekdays:
+
+```sh
+crontab -e
+```
+
+Add the following lines:
+
+```
+0 8 * * 1-5 /usr/local/bin/keylight on --discover
+0 19 * * 1-5 /usr/local/bin/keylight off --discover
 ```
 
 ## Setting up as daemon on macOS
