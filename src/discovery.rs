@@ -20,14 +20,26 @@ pub fn discover_lights(
     let mut lights = Vec::new();
     let mut seen_names = HashSet::new();
     let start = Instant::now();
+    let mut last_found = None::<Instant>;
+    let grace_period = Duration::from_secs(5);
+    let poll_interval = Duration::from_secs(1);
 
     while start.elapsed() < timeout {
+        // After finding at least one light, stop if no new light found within grace period
+        if let Some(last) = last_found {
+            if last.elapsed() >= grace_period {
+                log::info!("No new lights found in {}s, stopping discovery", grace_period.as_secs());
+                break;
+            }
+        }
+
         let remaining = timeout.saturating_sub(start.elapsed());
         if remaining.is_zero() {
             break;
         }
+        let wait = remaining.min(poll_interval);
 
-        match receiver.recv_timeout(remaining) {
+        match receiver.recv_timeout(wait) {
             Ok(ServiceEvent::ServiceResolved(info)) => {
                 let name = info.get_fullname().to_string();
                 if seen_names.contains(&name) {
@@ -63,6 +75,7 @@ pub fn discover_lights(
                     ip,
                     port: info.get_port(),
                 });
+                last_found = Some(Instant::now());
             }
             Ok(_) => {}
             Err(_) => {}
