@@ -1,13 +1,16 @@
 mod cli;
+mod discovery;
 
 // Logging
 use chrono::Local;
 use env_logger::Builder;
 use log::LevelFilter;
 use std::io::Write;
+use std::time::Duration;
 
 // Required deps
 use cli::get_app_cli;
+use discovery::discover_lights;
 use reqwest::Client;
 use serde_json::{json, Value};
 
@@ -37,7 +40,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse_env("LOG_LEVEL")
         .init();
 
-    let elgato_ip = matches.value_of("elgato_ip").unwrap();
+    // Determine target lights
+    let discover = matches.is_present("discover");
+    let elgato_ip = matches.value_of("elgato_ip");
+
+    let targets: Vec<(String, u16)> = if discover {
+        println!("Discovering Elgato Keylights on the network...");
+        let lights = discover_lights(Duration::from_secs(5))?;
+        if lights.is_empty() {
+            eprintln!("Error: No Elgato Keylights found on the network.");
+            std::process::exit(1);
+        }
+        for light in &lights {
+            println!("  Found: {} ({}:{})", light.name, light.ip, light.port);
+        }
+        lights.into_iter().map(|l| (l.ip, l.port)).collect()
+    } else if let Some(ip) = elgato_ip {
+        vec![(ip.to_string(), 9123)]
+    } else {
+        eprintln!("Error: Either --discover or --elgato-ip must be specified.");
+        std::process::exit(1);
+    };
+
     let numberoflights = matches.value_of("number_of_lights").unwrap();
 
     let switch = match matches.value_of("switch").unwrap() {
@@ -47,13 +71,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => 0,
     };
 
-    // status
     if switch == 0 {
-        let power_status = "off";
-        println!("Elgato Keylight is: {}", power_status);
+        println!("Elgato Keylight is: off");
     } else if switch == 1 {
-        let power_status = "on";
-        println!("Elgato Keylight is: {}", power_status);
+        println!("Elgato Keylight is: on");
     }
 
     let brightness = matches
@@ -77,36 +98,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ]
     });
 
-    let url = format!("http://{}:{}", elgato_ip, "9123/elgato/lights");
-    log::info!("status: {}", url);
-
     let client = Client::new();
 
-    let response = client.put(url).json(&body).send().await?;
+    for (ip, port) in &targets {
+        let url = format!("http://{}:{}/elgato/lights", ip, port);
+        log::info!("Sending request to: {}", url);
 
-    // response status code
-    let response_success = response.status();
-    log::info!("Response status: {}", response_success);
+        if switch == 2 {
+            // GET to read current settings without modifying them
+            let response = client.get(&url).send().await?;
+            log::info!("Response status: {}", response.status());
 
-    // body
-    let response_body = response.text().await?;
-    log::info!("Response text: {}", response_body);
+            let response_body = response.text().await?;
+            log::info!("Response text: {}", response_body);
 
-    // Json data
-    let response_json: serde_json::Value = serde_json::from_str(&response_body)?;
-    log::info!("Response json: {:?}", response_json);
+            let v: Value = serde_json::from_str(&response_body)?;
+            let light = &v["lights"][0];
 
-    if switch == 2 {
-        let v: Value = serde_json::from_str(&response_body)?;
+            let power = if light["on"] == 1 { "on" } else { "off" };
+            let brightness = &light["brightness"];
+            let temperature = &light["temperature"];
 
-        let query = &v["lights"][0]["on"];
+            println!("Elgato light at {}:", ip);
+            println!("  Power:       {}", power);
+            println!("  Brightness:  {}", brightness);
+            println!("  Temperature: {}", temperature);
+        } else {
+            // PUT to change settings
+            let response = client.put(&url).json(&body).send().await?;
 
-        if query == 0 {
-            let status = "off";
-            println!("Elgato light is: {}", status);
-        } else if query == 1 {
-            let status = "on";
-            println!("Elgato light is: {}", status);
+            let response_success = response.status();
+            log::info!("Response status: {}", response_success);
+
+            let response_body = response.text().await?;
+            log::info!("Response text: {}", response_body);
+
+            let response_json: serde_json::Value = serde_json::from_str(&response_body)?;
+            log::info!("Response json: {:?}", response_json);
         }
     }
 

@@ -14,4 +14,5 @@ log = "*"
 reqwest = { version = "*", features = ["json", "blocking"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+mdns-sd = "0.11"
 tokio = { version = "1.28.0", features = ["macros"] }

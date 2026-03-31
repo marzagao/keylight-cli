@@ -11,30 +11,57 @@ This is a cross platform lightweight CLI tool to simply and easily control your 
 - [X] ~~Add status to query for on/off~~ **Added in v0.2.2**
 - [ ] Support for brightness and temperature via preset arguments, I.E, `low`, `medium`, and `high` or `warm`, `medium`, and `cool`.
 - [ ] Support for brightness by percentage.
-- [ ] Autodiscovery support.
-- [ ] Testing with more than 1 Elgato Keylight.
+- [X] ~~Autodiscovery support.~~ **Added in v0.3.0**
+- [X] ~~Testing with more than 1 Elgato Keylight.~~ **Tested in v0.3.0**
 
 ## Building The App
 
-This app should build with minimal dependencies.  It's been tested with Rust 1.60 on macOS Sonoma 14.4.1 and 1 Elgato Keylight.
+This app should build with minimal dependencies.  It's been tested with Rust 1.60+ on macOS and 2 Elgato Keylights.
 
 ```sh
 cargo build
 sudo mv target/debug/keylight /usr/local/bin/keylight
-keylight status --elgato-ip <ip-address-here> --number-of-lights 1
 ```
 
 ## Running The App
 
-This CLI tool has three mandatory parameters and two optional ones (that have default values).  There are environment variables that can be provided in place of CLI arguments.
+There are two ways to target your Elgato Keylights: autodiscovery via mDNS or manual IP address.
+
+### Autodiscovery (recommended)
+
+Use the `--discover` / `-d` flag to automatically find all Elgato Keylights on your local network via mDNS:
+
+```sh
+# Check the status of all lights on the network
+keylight status --discover
+
+# Turn all discovered lights on
+keylight on --discover
+
+# Turn all discovered lights off
+keylight off --discover
+```
+
+### Manual IP address
+
+You can also specify the IP address directly:
+
+```sh
+keylight status --elgato-ip <ip-address-here>
+keylight on --elgato-ip <ip-address-here> --brightness 30 --temperature 200
+```
+
+Environment variables can be provided in place of CLI arguments.
+
+### Full usage
 
 ```
-keylight v0.2.3
-Jessica Deen <jessicadeen@me.com>
+keylight v0.3.0
+Jessica Deen <jessicadeen@me.com>, Thompson Marzagao <thompson@marzagao.com>
 Easy CLI to control Elgato Keylight
 
 USAGE:
-    keylight [OPTIONS] --elgato-ip <elgato_ip> --number-of-lights <number_of_lights> <on/off/status>
+    keylight [OPTIONS] <on/off/status>
 
 ARGS:
     <on/off/status>    Toggle light on, off, or query current power state [possible values: off,
@@ -44,14 +71,17 @@ OPTIONS:
     -b, --brightness <brightness>
             Brightness value for light [env: brightness=] [default: 20]
 
+    -d, --discover
+            Auto-discover Elgato Keylights on the local network via mDNS
+
     -h, --help
             Print help information
 
     -i, --elgato-ip <elgato_ip>
-            Elgato Keylight IP address [env: elgato_ip=192.168.184.166]
+            Elgato Keylight IP address [env: elgato_ip=]
 
     -n, --number-of-lights <number_of_lights>
-            Number of Elgato Keylights in use [env: number_of_lights=1]
+            Number of Elgato Keylights in use [env: number_of_lights=] [default: 1]
 
     -t, --temperature <temperature>
             Temperature value for light [env: temperature=] [default: 213]

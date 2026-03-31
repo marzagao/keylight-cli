@@ -38,7 +38,7 @@ pub fn get_app_cli(version: &str) -> Command {
                 .long("elgato-ip")
                 .short('i')
                 .help("Elgato Keylight IP address")
-                .required(true)
+                .required(false)
                 .aliases(&["elgato_ip", "elgato-ip", "elgato ip"])
                 .env("elgato_ip")
                 .takes_value(true),
@@ -48,10 +48,18 @@ pub fn get_app_cli(version: &str) -> Command {
                 .long("number-of-lights")
                 .short('n')
                 .help("Number of Elgato Keylights in use")
-                .required(true)
+                .required(false)
                 .aliases(&["number_of_lights", "number-of-lights", "number of lights"])
                 .env("number_of_lights")
+                .default_value("1")
                 .takes_value(true),
+        )
+        .arg(
+            Arg::new("discover")
+                .long("discover")
+                .short('d')
+                .help("Auto-discover Elgato Keylights on the local network via mDNS")
+                .takes_value(false),
         )
         .arg(
             Arg::new("verbose")
