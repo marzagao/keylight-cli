@@ -1,4 +1,4 @@
-[![CI](https://github.com/jldeen/keylight-cli/actions/workflows/build-ci.yml/badge.svg)](https://github.com/jldeen/keylight-cli/actions/workflows/build-ci.yml)
+[![CI](https://github.com/marzagao/keylight-cli/actions/workflows/build-ci.yml/badge.svg)](https://github.com/marzagao/keylight-cli/actions/workflows/build-ci.yml)
 
 # Elgato Keylight CLI
 
